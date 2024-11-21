@@ -88,7 +88,6 @@ def plot_compare():
 def plot_compare2():
     query = "SELECT User.UserID, User.UserName, Sessions.SessionCalories from User, Sessions where User.UserID = Sessions.UserID"
     rows = query_database(database_file, query)
-    print(rows)
     df = pd.DataFrame(rows, columns = ["UserID", "Username", "Session Calories"])
     df = df.drop('UserID', axis=1) 
     df1 = df.groupby(["Username"])['Session Calories'].sum().reset_index()
@@ -105,6 +104,13 @@ def plot_compare2():
 app = App(title="Skibidi Fitness", height=400, bg="#c0c5ce")  
 Main_Button = PushButton(app, text="My Progress", command=plot)
 Second_Button = PushButton(app, text="Compare Progress", command=plot_compare)
-Third_Button = PushButton(app, text="Stupid", command=plot_compare2)
-Main_ListBox = ListBox(app, items=["SWAWS", "K", "Y", "S"])
+Third_Button = PushButton(app, text="Compare Progress 2", command=plot_compare2)
+Main_ListBox = ListBox(app)
+
+
+query = "SELECT UserName, SUM(SessionCalories) as Total FROM User, Sessions WHERE User.UserID = Sessions.UserID GROUP BY User.UserID ORDER BY Total DESC"
+rows = query_database(database_file, query)
+for i in range(0, len(rows)):
+    Main_ListBox.append(rows[i])
 app.display()
+
