@@ -1,0 +1,110 @@
+from guizero import App, Window, PushButton, Text, CheckBox, ListBox, TextBox, ButtonGroup, Picture, Combo, Box, info , Box, Slider # Guizero imports to create front end
+
+import sqlite3
+from sqlite3 import Error # sqlite import to create and manage database
+import os
+import os.path # OS import to edit system files
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# SQL creation and inserting test data
+sql = """
+CREATE TABLE "User" ( 
+"UserID" INTEGER NOT NULL,
+"UserName" TEXT,
+"UserPassword" TEXT,
+PRIMARY KEY("UserID" AUTOINCREMENT)
+);
+CREATE TABLE "Sessions" (
+"SessionID"  INTEGER NOT NULL,
+"SessionDate" TEXT,
+"SessionTime" INTEGER,
+"SessionType" TEXT,
+"SessionCalories" INTEGER,
+"UserID"  INTEGER,
+PRIMARY KEY("SessionID" AUTOINCREMENT)
+FOREIGN KEY(UserID) REFERENCES User(UserID)
+);
+insert into User (UserName, UserPassword) values ('Dylan','North');
+insert into User (UserName, UserPassword) values ('Thomas','Petrie');
+insert into User (UserName, UserPassword) values ('Max','Tinsley');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/20', '40', 'Arms', '200', '1');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/19', '50', 'Back', '230', '1');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/18', '70', 'Chest', '275', '1');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/20', '40', 'Back', '150', '2');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/19', '65', 'Legs', '210', '2');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/18', '30', 'Arms', '130', '2');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/20', '70', 'Chest', '300', '3');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/19', '90', 'Arms', '310', '3');
+insert into Sessions (SessionDate, SessionTime, SessionType, SessionCalories, UserID) values ('2024/11/18', '45', 'Legs', '160', '3');
+"""
+                        
+database_file = 'Fitness.db'
+
+if os.path.exists(database_file):
+   os.remove(database_file) # Resets database each time program starts for test purposes
+
+conn = sqlite3.connect(database_file) 
+cursor = conn.cursor()
+cursor.executescript(sql)
+conn.commit() # Initialising SQL integration 
+
+def query_database(database, query, params=()):
+	# Function to query the database
+    with sqlite3.connect(database) as conn:
+        cur = conn.cursor()
+        cur.execute(query, params)
+        rows = cur.fetchall()
+    return rows
+
+def execute_sql(database, sql_statement, params=()):
+	# Function to execute SQL statements
+    with sqlite3.connect(database) as conn:
+        cur = conn.cursor()
+        cur.execute(sql_statement, params)
+        conn.commit()
+    return cur.lastrowid
+
+def plot():
+    query = "SELECT SessionDate, SessionCalories from Sessions WHERE UserID = ? ORDER BY SessionDate"
+    rows = query_database(database_file, query, ("1")) 
+    df = pd.DataFrame(rows, columns=['Calories','Date'])
+    print(df)
+    plt.plot(df['Calories'],df['Date'], marker="*", markersize = 18)
+    plt.xlabel('Date')
+    plt.ylabel('Calories Burnt')
+    plt.title('Calories burnt over time')
+    plt.show()
+
+def plot_compare():
+    query = "SELECT SessionID, SessionCalories, UserID from Sessions"
+    rows = query_database(database_file, query)
+    df = pd.DataFrame(rows, columns = ["SessionID", "Session Calories", "UserID"])
+    df1 = df.groupby(["UserID"])['Session Calories'].sum().reset_index()
+    print(df1)
+    plt.bar(df["UserID"], df["Session Calories"], 0.5)
+    plt.show()
+
+def plot_compare2():
+    query = "SELECT User.UserID, User.UserName, Sessions.SessionCalories from User, Sessions where User.UserID = Sessions.UserID"
+    rows = query_database(database_file, query)
+    print(rows)
+    df = pd.DataFrame(rows, columns = ["UserID", "Username", "Session Calories"])
+    df = df.drop('UserID', axis=1) 
+    df1 = df.groupby(["Username"])['Session Calories'].sum().reset_index()
+    print(df1)
+    plt.bar(df["Username"], df["Session Calories"], 0.5)    
+    plt.show()
+
+
+#########################
+# MAIN CODE STARTS HERE #
+#########################
+
+# Main window
+app = App(title="Skibidi Fitness", height=400, bg="#c0c5ce")  
+Main_Button = PushButton(app, text="My Progress", command=plot)
+Second_Button = PushButton(app, text="Compare Progress", command=plot_compare)
+Third_Button = PushButton(app, text="Stupid", command=plot_compare2)
+Main_ListBox = ListBox(app, items=["SWAWS", "K", "Y", "S"])
+app.display()
